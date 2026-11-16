@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // astro/tsconfigs/strict（Astro 2）相当の設定。
+  // 継承元の baseUrl / moduleResolution: "node" / importsNotUsedAsValues が
+  // TypeScript 6 で非推奨・削除になったため、現行の書き方に置き換えて独立させている。
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "strict": true
+  },
+  "include": ["src", "astro.config.mjs"],
+  "exclude": ["dist", "node_modules"]
+}
