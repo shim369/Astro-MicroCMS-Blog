@@ -59,7 +59,7 @@ Create a **list-type API** with the endpoint `blogs` and these fields:
 
 Article URLs are `/articles/{content ID}`.
 
-Use one of these category names to get the matching color: `Next`, `Nuxt`, `Astro`, `Gatsby`, `Svelte`. Other names still work and get a neutral color. Only categories with at least one article are shown, and the intro and footer text list them automatically. You can add or change categories in `CATEGORIES` in `src/lib/blog.ts`.
+Use one of these category names to get the matching color: `Next`, `Nuxt`, `Astro`, `Gatsby`, `Svelte`. Other names still work and get a neutral color. Only categories with at least one article are shown. You can add or change categories in `CATEGORIES` in `src/lib/blog.ts`.
 
 In the article body, `<h2>` headings are added to the table of contents automatically, and `<pre><code>` blocks get the copy button.
 
