@@ -1,7 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { getArticles } from '../lib/microcms';
-import { catOf, categoriesOf, coverSvg, excerptOf, fmtDate, isoDate, joinCategoryNames, readMin } from '../lib/blog';
+import { catOf, categoriesOf, coverSvg, excerptOf, fmtDate, isoDate, readMin } from '../lib/blog';
 
 const articles = await getArticles();
 const categories = categoriesOf(articles);
@@ -13,7 +13,6 @@ const catNames = Object.fromEntries(categories.map((c) => [c.id, { name: c.name,
 		<section class="hero">
 			<div class="wrap">
 				<div class="hero-intro">
-					<p>{joinCategoryNames(categories)} を実際に触って、つまずいたところと解決方法を書き残しています。フレームワーク名を選ぶと記事を絞り込めます。</p>
 					<div class="count"><b>{articles.length}</b>本の記事</div>
 				</div>
 				<ul class="fw-list" role="list">

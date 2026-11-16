@@ -1,15 +1,12 @@
 ---
 import '../styles/global.css';
-import { getArticles } from '../lib/microcms';
-import { categoriesOf, joinCategoryNames } from '../lib/blog';
 
 export interface Props {
 	title: string;
 	description?: string;
 }
 
-const categories = categoriesOf(await getArticles());
-const { title, description = `${joinCategoryNames(categories)} の実装メモ` } = Astro.props;
+const { title, description = 'TECH BLOG' } = Astro.props;
 ---
 <!DOCTYPE html>
 <html lang="ja">
@@ -61,7 +58,7 @@ const { title, description = `${joinCategoryNames(categories)} の実装メモ` 
 			<div class="wrap">
 				<div>
 					<div class="big">TECH BLOG</div>
-					<small>© {new Date().getFullYear()} TECH BLOG — {joinCategoryNames(categories, ' / ')} の実装メモ</small>
+					<small>© {new Date().getFullYear()} TECH BLOG</small>
 				</div>
 				<a href="#top" class="to-top" id="footerTop">ページの先頭へ戻る</a>
 			</div>

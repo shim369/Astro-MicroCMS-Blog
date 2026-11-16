@@ -31,9 +31,6 @@ export function categoriesOf(articles: Article[]): (Category & { count: number }
 		.map((id) => ({ ...catOf(id), count: articles.filter((a) => a.category?.name === id).length }))
 }
 
-/** 「Next.js・Nuxt.js・Astro」のようにカテゴリ名をつなげる */
-export const joinCategoryNames = (cats: Category[], sep = '・') => cats.map((c) => c.name).join(sep)
-
 export const fmtDate = (d: string | Date) =>
 	new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Tokyo' }).format(new Date(d))
 
