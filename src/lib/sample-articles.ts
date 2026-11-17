@@ -18,7 +18,7 @@ export const sampleArticles: Article[] = [
     "excerpt": "fetch のキャッシュ、Full Route Cache、Router Cache。名前の似た仕組みが重なって混乱しやすいので、ブログを題材に一つずつ確認しました。",
     "content": "<p>記事を更新したのに本番で反映されない。App Router に移行して最初にぶつかったのがこれでした。</p>\n<h2>3 つのキャッシュ</h2>\n<ul><li><strong>Data Cache</strong>：<code>fetch</code> の結果をサーバー側で保持</li><li><strong>Full Route Cache</strong>：ビルド時に生成した HTML と RSC ペイロード</li><li><strong>Router Cache</strong>：ブラウザ側に残る遷移済みページ</li></ul>\n<h2>記事ページの設定</h2>\n<pre data-lang=\"ts\"><code>// app/articles/[slug]/page.tsx\nexport const revalidate = 3600 // 1時間ごとに再生成\n\nexport default async function Page({ params }) {\n  const article = await getArticle(params.slug)\n  return &lt;Article data={article} /&gt;\n}</code></pre>\n<h2>CMS 更新時に即反映する</h2>\n<p>microCMS の Webhook から Route Handler を呼び、<code>revalidateTag('articles')</code> を実行すると、次のアクセスで再生成されます。</p>",
     "category": {
-      "name": "Next"
+      "name": "Next.js"
     },
     "publishedAt": "2026-10-29T09:00:00.000Z"
   },
@@ -58,7 +58,7 @@ export const sampleArticles: Article[] = [
     "excerpt": "バリデーションは zod、送信中の表示は useFormStatus。フォーム 1 枚に必要なコードがどこまで減るか試しました。",
     "content": "<p>API Route を用意してクライアントから fetch する、という定番の形を Server Actions に置き換えます。</p>\n<h2>アクションを書く</h2>\n<pre data-lang=\"ts\"><code>'use server'\nimport { z } from 'zod'\n\nconst schema = z.object({ email: z.string().email(), body: z.string().min(10) })\n\nexport async function send(_: unknown, form: FormData) {\n  const parsed = schema.safeParse(Object.fromEntries(form))\n  if (!parsed.success) return { error: '入力内容を確認してください' }\n  await sendMail(parsed.data)\n  return { ok: true }\n}</code></pre>\n<h2>送信中の状態</h2>\n<p><code>useFormStatus</code> の <code>pending</code> を見てボタンを無効化します。二重送信もこれで防げます。</p>",
     "category": {
-      "name": "Next"
+      "name": "Next.js"
     },
     "publishedAt": "2026-09-10T09:00:00.000Z"
   },

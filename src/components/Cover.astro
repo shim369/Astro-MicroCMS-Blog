@@ -1,0 +1,23 @@
+---
+import type { Article } from '../types/article';
+import { catOf, coverVars, two } from '../lib/blog';
+
+export interface Props {
+	article: Article;
+	no: number;
+	class?: string;
+	/** View Transitions で一覧と記事ページのカバーをつなぐ */
+	named?: boolean;
+	eager?: boolean;
+}
+
+const { article, no, class: cls = '', named = true, eager = false } = Astro.props;
+const style = `${named ? `view-transition-name:cv-${article.id.replace(/[^\w-]/g, '_')};` : ''}${coverVars(article.id)}`;
+---
+
+<div class={`cover ${cls}`} style={style}>
+	{article.eyecatch?.url && <img src={article.eyecatch.url} alt="" loading={eager ? 'eager' : 'lazy'} />}
+	<span class="bar"></span>
+	<span class="no" aria-hidden="true">{two(no)}</span>
+	<span class="fw tag"><span>{catOf(article.category?.name).name}</span></span>
+</div>
