@@ -1,125 +1,227 @@
 ---
 import '../styles/global.css';
+import { getArticles } from '../lib/microcms';
+import { catOf, categoriesOf, stripTags, two } from '../lib/blog';
 
 export interface Props {
 	title: string;
 	description?: string;
+	/** 記事ページでは読了バーを表示する */
+	isArticle?: boolean;
+	/** サイドバーで選択状態にするカテゴリ */
+	activeCat?: string;
 }
 
-const { title, description = 'TECH BLOG' } = Astro.props;
+const {
+	title,
+	description = 'フロントエンド開発で実際につまずいたことと、その解決方法を記録する技術ブログ。フレームワークの使い方から実装の工夫まで、手を動かして確かめた内容をまとめています。',
+	isArticle = false,
+	activeCat = 'All',
+} = Astro.props;
+
+const articles = await getArticles();
+const categories = categoriesOf(articles);
+const year = new Date().getFullYear();
+
+// ⌘K 検索用のインデックス（全ページ共通）
+const findIndex = articles.map((a, i) => ({
+	id: a.id,
+	no: articles.length - i,
+	title: a.title,
+	cat: catOf(a.category?.name).name,
+	text: `${a.title} ${stripTags(a.content)} ${catOf(a.category?.name).name}`,
+}));
+const findJson = JSON.stringify(findIndex).replace(/</g, '\\u003c');
 ---
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" class={isArticle ? 'is-article' : undefined}>
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title}</title>
 		<meta name="description" content={description} />
-		<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2322343A'/%3E%3Cpath d='M9 9h14v4h-5v11h-4V13H9z' fill='%23E7C942'/%3E%3C/svg%3E" />
+		<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%2323262b'/%3E%3Crect x='18' y='18' width='9' height='9' fill='%237b61ff'/%3E%3C/svg%3E" />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-		<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
-		<!-- 描画前にテーマを適用してチラつきを防ぐ -->
-		<script is:inline>
-			(() => {
-				let t;
-				try { t = localStorage.getItem('tb-theme'); } catch (_) {}
-				document.documentElement.dataset.theme = t || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-			})();
-		</script>
+		<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Dela+Gothic+One&family=IBM+Plex+Mono:wght@400;500&family=M+PLUS+1p:wght@400;500;700;800&display=swap" rel="stylesheet" />
 	</head>
 	<body id="top">
 		<a href="#main" class="sr-only">本文へ移動</a>
-		<header class="site-header">
-			<div class="wrap">
-				<a href="/" class="logo" aria-label="TECH BLOG トップへ">
-					<span class="logo-mark"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1 1h14v4H10v10H6V5H1z" /></svg></span>
-					<span>TECH BLOG</span>
-				</a>
-				<div class="header-tools">
-					<form class="search" action="/" role="search">
-						<label class="sr-only" for="q">記事を検索</label>
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-						<input id="q" name="q" type="search" placeholder="記事を検索" autocomplete="off" />
-						<kbd>/</kbd>
-					</form>
-					<button class="icon-btn" id="theme" type="button" aria-label="ダークモードに切り替え"></button>
-				</div>
-			</div>
-			<div class="progress" id="progress"></div>
-		</header>
+		<div class="progress" id="progress" aria-hidden="true"></div>
 
-		<main id="main" tabindex="-1">
-			<slot />
-		</main>
-
-		<footer class="site-footer">
-			<div class="wrap">
-				<div>
-					<div class="big">TECH BLOG</div>
-					<small>© {new Date().getFullYear()} TECH BLOG</small>
-				</div>
-				<a href="#top" class="to-top" id="footerTop">ページの先頭へ戻る</a>
+		<aside class="side">
+			<div class="brand"><a href="/" aria-label="TECH BLOG トップへ">Tech<br />Blog</a><span class="vol">VOL.01 — {year} — FIELD NOTES</span></div>
+			<nav aria-label="フレームワークで絞り込む">
+				<span class="tag">Index</span>
+				<a class="filter" href="/" data-filter="All" aria-current={activeCat === 'All' ? 'true' : undefined}><span class="n">00</span><b>All notes</b><sup>{articles.length}</sup></a>
+				{categories.map((c, i) => (
+					<a class="filter" href={`/?cat=${encodeURIComponent(c.id)}`} data-filter={c.id} aria-current={activeCat === c.id ? 'true' : undefined}>
+						<span class="n">{two(i + 1)}</span><b>{c.name}</b><sup>{c.count}</sup>
+					</a>
+				))}
+			</nav>
+			<div class="foot">
+				<button class="find" id="openFind" type="button" aria-haspopup="dialog"><span>Find a note</span><span id="kbd">⌘K</span></button>
+				<div class="clock tag"><span>Tokyo</span><time id="clock">--:--</time></div>
 			</div>
-		</footer>
+		</aside>
+
+		<div class="page">
+			<main id="main" tabindex="-1">
+				<slot />
+			</main>
+			<footer class="closer">
+				<div class="pad">
+					<div class="big" aria-hidden="true">Keep <span>Shipping.</span></div>
+					<div class="row tag">
+						<span>© {year} TECH BLOG — delivered by microCMS</span>
+						<span>{categories.map((c) => c.name).join(' / ')}</span>
+						<a href="#top" data-top>Back to top ↑</a>
+					</div>
+				</div>
+			</footer>
+		</div>
+
+		<dialog class="find-dlg" id="dlg" aria-label="記事を検索">
+			<label><span class="tag">Find /</span><input id="q" type="search" placeholder="Type a keyword" autocomplete="off" role="combobox" aria-controls="hits" aria-expanded="true" /></label>
+			<ul id="hits" role="listbox"></ul>
+			<footer class="tag"><span>↑↓ Move</span><span>Enter Open</span><span>Esc Close</span></footer>
+		</dialog>
 		<div class="toast" id="toast" role="status" aria-live="polite"></div>
+		<script type="application/json" id="find-data" set:html={findJson} />
 
 		<script>
+			type Note = { id: string; no: number; title: string; cat: string; text: string };
+
+			const $ = <T extends Element = HTMLElement>(s: string, el: ParentNode = document) => el.querySelector<T>(s)!;
+			const $$ = <T extends Element = HTMLElement>(s: string, el: ParentNode = document) => [...el.querySelectorAll<T>(s)];
 			const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-			/* テーマ切替 */
-			const themeBtn = document.getElementById('theme')!;
-			const moon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>';
-			const sun = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
-			function applyTheme(t: string, save = false) {
-				document.documentElement.dataset.theme = t;
-				themeBtn.innerHTML = t === 'dark' ? sun : moon;
-				themeBtn.setAttribute('aria-label', t === 'dark' ? 'ライトモードに切り替え' : 'ダークモードに切り替え');
-				if (save) try { localStorage.setItem('tb-theme', t); } catch (_) {}
-			}
-			applyTheme(document.documentElement.dataset.theme || 'light');
-			themeBtn.addEventListener('click', () =>
-				applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark', true)
-			);
-
-			/* 「/」で検索にフォーカス */
-			const q = document.getElementById('q') as HTMLInputElement;
-			document.addEventListener('keydown', (e) => {
-				const tag = (document.activeElement?.tagName || '').toLowerCase();
-				if (e.key === '/' && tag !== 'input' && tag !== 'textarea') {
-					e.preventDefault();
-					q.focus();
-				}
-			});
-
-			/* ページ先頭へ */
-			document.getElementById('footerTop')!.addEventListener('click', (e) => {
-				e.preventDefault();
-				window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
-			});
-
-			/* コードのコピー */
-			document.addEventListener('click', (e) => {
-				const cp = (e.target as Element).closest<HTMLButtonElement>('[data-copy]');
-				if (!cp) return;
-				const code = cp.closest('.code')?.querySelector('code')?.innerText ?? '';
-				navigator.clipboard?.writeText(code).then(() => {
-					cp.textContent = 'コピーしました';
-					window.toast('コードをコピーしました');
-					setTimeout(() => (cp.textContent = 'コピー'), 1800);
-				});
-			});
+			const esc = (s: string) =>
+				s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+			const norm = (s: string) => s.normalize('NFKC').toLowerCase();
+			const two = (n: number) => String(n).padStart(2, '0');
 
 			/* トースト */
 			let toastTimer: number | undefined;
 			window.toast = (msg: string) => {
-				const t = document.getElementById('toast')!;
+				const t = $('#toast');
 				t.textContent = msg;
 				t.classList.add('show');
 				clearTimeout(toastTimer);
-				toastTimer = window.setTimeout(() => t.classList.remove('show'), 2000);
+				toastTimer = window.setTimeout(() => t.classList.remove('show'), 1800);
 			};
+
+			/* コードのコピー・リンクのコピー・先頭へ */
+			document.addEventListener('click', (e) => {
+				const t = e.target as Element;
+				const cp = t.closest<HTMLButtonElement>('[data-copy]');
+				if (cp) {
+					const code = cp.closest('.code')?.querySelector('code')?.innerText ?? '';
+					navigator.clipboard?.writeText(code).then(() => {
+						cp.textContent = 'Copied';
+						window.toast('コードをコピーしました');
+						setTimeout(() => (cp.textContent = 'Copy'), 1500);
+					});
+					return;
+				}
+				if (t.closest('[data-share]')) {
+					navigator.clipboard?.writeText(location.href.split('#')[0]).then(() => window.toast('リンクをコピーしました'));
+					return;
+				}
+				if (t.closest('[data-top]')) {
+					e.preventDefault();
+					scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+				}
+			});
+
+			/* 時計 */
+			const clock = $('#clock');
+			const tick = () =>
+				(clock.textContent = new Date().toLocaleTimeString('en-GB', { timeZone: 'Asia/Tokyo', hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+			tick();
+			setInterval(tick, 1000);
+
+			/* 読了バー（scroll-driven animation 非対応ブラウザ向け） */
+			if (!CSS.supports('animation-timeline: scroll()') && document.documentElement.classList.contains('is-article')) {
+				const bar = $('#progress');
+				const onScroll = () => {
+					const max = document.documentElement.scrollHeight - innerHeight;
+					bar.style.transform = `scaleX(${max > 0 ? scrollY / max : 0})`;
+				};
+				addEventListener('scroll', onScroll, { passive: true });
+				onScroll();
+			}
+
+			/* ⌘K 検索 */
+			const NOTES: Note[] = JSON.parse($('#find-data').textContent || '[]').map((n: Note) => ({ ...n, text: norm(n.text) }));
+			const dlg = $<HTMLDialogElement>('#dlg');
+			const q = $<HTMLInputElement>('#q');
+			const hits = $('#hits');
+			const seg = 'Segmenter' in Intl ? new Intl.Segmenter('ja', { granularity: 'word' }) : null;
+			let sel = 0;
+			$('#kbd').textContent = /Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘K' : 'Ctrl K';
+
+			function termsOf(raw: string) {
+				const s = norm(raw);
+				if (!s) return [];
+				return seg ? [...seg.segment(s)].filter((x) => x.isWordLike).map((x) => x.segment) : s.split(/\s+/);
+			}
+			function find() {
+				const raw = q.value.trim();
+				const terms = termsOf(raw);
+				const res = NOTES.map((n) => {
+					let sc = 0;
+					for (const t of terms) {
+						if (!n.text.includes(t)) return null;
+						sc += norm(n.title).includes(t) ? 3 : 1;
+					}
+					return { n, sc };
+				})
+					.filter((x): x is { n: Note; sc: number } => !!x)
+					.sort((a, b) => b.sc - a.sc)
+					.slice(0, 8);
+				const mk = (s: string) =>
+					terms.reduce((o, t) => o.replace(new RegExp(esc(t).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi'), (m) => `<mark>${m}</mark>`), esc(s));
+				sel = 0;
+				hits.innerHTML = res.length
+					? res
+							.map(
+								({ n }, i) =>
+									`<li role="option"><a href="/articles/${n.id}" aria-selected="${i === 0}"><span class="tag">No.${two(n.no)}</span><span>${mk(n.title)}</span><span class="tag">${esc(n.cat)}</span></a></li>`
+							)
+							.join('')
+					: `<li class="none">「${esc(raw)}」に一致するノートはありません。別のキーワードで探してください。</li>`;
+			}
+			const move = (d: number) => {
+				const it = $$('a', hits);
+				if (!it.length) return;
+				sel = (sel + d + it.length) % it.length;
+				it.forEach((el, i) => el.setAttribute('aria-selected', String(i === sel)));
+				it[sel].scrollIntoView({ block: 'nearest' });
+			};
+			const openFind = () => {
+				if (dlg.open) return;
+				q.value = '';
+				find();
+				dlg.showModal();
+				q.focus();
+			};
+			$('#openFind').addEventListener('click', openFind);
+			q.addEventListener('input', find);
+			q.addEventListener('keydown', (e) => {
+				if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+				else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+				else if (e.key === 'Enter') {
+					const a = $$<HTMLAnchorElement>('a', hits)[sel];
+					if (a) { dlg.close(); location.href = a.href; }
+				}
+			});
+			dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+			document.addEventListener('keydown', (e) => {
+				if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); openFind(); }
+				else if (e.key === '/' && !/input|textarea/i.test(document.activeElement?.tagName ?? '')) { e.preventDefault(); openFind(); }
+			});
 		</script>
 	</body>
 </html>
