@@ -1,176 +1,104 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import Cover from '../../components/Cover.astro';
 import { getArticles } from '../../lib/microcms';
 import type { Article } from '../../types/article';
-import { catOf, coverSvg, excerptOf, fmtDate, isoDate, processBody, readMin } from '../../lib/blog';
+import { catOf, dotDate, excerptOf, isoDate, processBody, readMin, two } from '../../lib/blog';
 
 export const getStaticPaths = async () => {
 	const articles = await getArticles(); // 新しい順
-	return articles.map((article, i) => {
-		const sameCat = articles.filter((a) => a !== article && a.category?.name === article.category?.name);
-		const others = articles.filter((a) => a !== article && a.category?.name !== article.category?.name);
-		return {
-			params: { slug: article.id },
-			props: {
-				article,
-				newer: articles[i - 1] ?? null,
-				older: articles[i + 1] ?? null,
-				related: [...sameCat, ...others].slice(0, 3),
-			},
-		};
-	});
+	const n = articles.length;
+	return articles.map((article, i) => ({
+		params: { slug: article.id },
+		props: {
+			article,
+			no: n - i,
+			total: n,
+			prev: articles[i + 1] ? { article: articles[i + 1], no: n - i - 1 } : null,
+			next: articles[i - 1] ? { article: articles[i - 1], no: n - i + 1 } : null,
+		},
+	}));
 };
 
+type Neighbor = { article: Article; no: number } | null;
 interface Props {
 	article: Article;
-	newer: Article | null;
-	older: Article | null;
-	related: Article[];
+	no: number;
+	total: number;
+	prev: Neighbor;
+	next: Neighbor;
 }
 
-const { article, newer, older, related } = Astro.props;
+const { article, no, total, prev, next } = Astro.props;
 const c = catOf(article.category?.name);
-const { html, headings } = processBody(article.content);
-const tocItems = headings.map((h) => ({ href: `#${h.id}`, id: h.id, text: h.text }));
+const { html, headings, codeCount } = processBody(article.content);
 ---
 
-<Layout title={`${article.title} | TECH BLOG`} description={excerptOf(article)}>
-	<article class="article view" style={`--c:var(${c.color})`} data-color={c.color}>
-		<div class="wrap">
-			<a href="/" class="back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>記事一覧</a>
-
-			<header class="article-head">
-				<div class="titles">
-					<a class="article-cat" href={`/?cat=${encodeURIComponent(c.id)}`}>{c.name}</a>
-					<h1>{article.title}</h1>
-					<div class="article-meta">
-						<time datetime={isoDate(article.publishedAt)}>{fmtDate(article.publishedAt)}</time>
-						<span>{readMin(article.content)}分で読めます</span>
-					</div>
-				</div>
-				<div class="share">
-					<button type="button" id="copyLink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" /><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" /></svg>リンクをコピー</button>
-					<a id="shareX" href="https://x.com/intent/post" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.7L22 21h-6.2l-4.9-6.3L5.3 21H2.2l7.3-8.3L2 3h6.4l4.4 5.8zm-1.1 16.2h1.7L7.4 4.7H5.5z" /></svg>ポスト</a>
-				</div>
-			</header>
-
-			<div class="article-cover">
-				{article.eyecatch?.url
-					? <img src={article.eyecatch.url} alt="" />
-					: <Fragment set:html={coverSvg(article, 1260, 480)} />}
-			</div>
-
-			<div class="article-layout">
-				<div>
-					{tocItems.length > 0 && (
-						<details class="toc-mobile">
-							<summary>目次<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="m6 9 6 6 6-6" /></svg></summary>
-							<ol>{tocItems.map((t) => <li><a href={t.href}>{t.text}</a></li>)}</ol>
-						</details>
+<Layout title={`${article.title} | TECH BLOG`} description={excerptOf(article)} isArticle activeCat={c.id}>
+	<article class="art pad">
+		<div class="art-top tag">
+			<a href="/">← Archive</a>
+			<span>No.{two(no)} / {two(total)}</span>
+			<a href={`/?cat=${encodeURIComponent(c.id)}`}>{c.name} →</a>
+		</div>
+		<header class="art-head">
+			<span class="bigno" aria-hidden="true">{two(no)}</span>
+			<div><span class="chip tag">{c.name}</span><h1>{article.title}</h1></div>
+		</header>
+		<Cover article={article} no={no} class="art-cover" eager />
+		<div class="art-grid">
+			<aside class="facts" aria-label="記事の情報と目次">
+				<dl class="tag">
+					<div><dt>Date</dt><dd><time datetime={isoDate(article.publishedAt)}>{dotDate(article.publishedAt).slice(5)}</time></dd></div>
+					<div><dt>Read</dt><dd>{readMin(article.content)} min</dd></div>
+					<div><dt>Parts</dt><dd>{two(headings.length)}</dd></div>
+					<div><dt>Code</dt><dd>{two(codeCount)}</dd></div>
+				</dl>
+				{headings.length > 0 && (
+					<ol>
+						<li class="tag">Contents</li>
+						{headings.map((h, n) => (
+							<li><a href={`#${h.id}`} data-toc={h.id}><span>{two(n + 1)}</span>{h.text}</a></li>
+						))}
+					</ol>
+				)}
+				<div class="acts tag"><button type="button" data-share>Copy link</button><button type="button" data-top>Top ↑</button></div>
+			</aside>
+			<div>
+				<div class="prose" set:html={html} />
+				<nav class="nextprev" aria-label="前後の記事">
+					{prev ? (
+						<a href={`/articles/${prev.article.id}`}><span class="tag">← Prev / No.{two(prev.no)}</span><b>{prev.article.title}</b></a>
+					) : <span></span>}
+					{next && (
+						<a href={`/articles/${next.article.id}`}><span class="tag">Next / No.{two(next.no)} →</span><b>{next.article.title}</b></a>
 					)}
-
-					<div class="prose" id="prose" set:html={html} />
-
-					<nav class="pager" aria-label="前後の記事">
-						{older && <a href={`/articles/${older.id}`}><small>前の記事</small><strong>{older.title}</strong></a>}
-						{newer && <a class="next" href={`/articles/${newer.id}`}><small>次の記事</small><strong>{newer.title}</strong></a>}
-					</nav>
-				</div>
-
-				<aside class="toc-side">
-					{tocItems.length > 0 && (
-						<nav class="toc" aria-label="目次">
-							<h2>目次</h2>
-							<ol>{tocItems.map((t) => <li><a href={t.href} data-toc={t.id}>{t.text}</a></li>)}</ol>
-						</nav>
-					)}
-					<div class="mini-progress"><span id="pct">0%</span> 読了<div class="track"><div class="fill" id="fill"></div></div></div>
-					<button type="button" class="to-top-btn" id="toTop">ページの先頭へ戻る</button>
-				</aside>
+				</nav>
 			</div>
 		</div>
 	</article>
-
-	{related.length > 0 && (
-		<section class="related" aria-labelledby="relatedTitle">
-			<div class="wrap">
-				<div class="related-head">
-					<h2 id="relatedTitle">関連する記事</h2>
-					<a href={`/?cat=${encodeURIComponent(c.id)}`}>{c.name} の記事をすべて見る</a>
-				</div>
-				<div class="grid">
-					{related.map((a: Article) => {
-						const rc = catOf(a.category?.name);
-						return (
-							<a class="post" href={`/articles/${a.id}`} style={`--c:var(${rc.color})`}>
-								<div class="cover">
-									{a.eyecatch?.url ? <img src={a.eyecatch.url} alt="" loading="lazy" /> : <Fragment set:html={coverSvg(a)} />}
-									<span class="tag">{rc.name}</span>
-								</div>
-								<div class="post-body">
-									<div class="post-date"><time datetime={isoDate(a.publishedAt)}>{fmtDate(a.publishedAt)}</time></div>
-									<h3 class="post-title"><span>{a.title}</span></h3>
-									<p class="post-excerpt">{excerptOf(a)}</p>
-								</div>
-							</a>
-						);
-					})}
-				</div>
-			</div>
-		</section>
-	)}
 </Layout>
 
 <script>
-	const $ = <T extends HTMLElement = HTMLElement>(s: string) => document.querySelector<T>(s);
 	const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-	const art = $('.article')!;
-	document.documentElement.style.setProperty('--accent', `var(${art.dataset.color})`);
 
-	/* 共有 */
-	$<HTMLAnchorElement>('#shareX')!.href = `https://x.com/intent/post?text=${encodeURIComponent(document.title)}&url=${encodeURIComponent(location.href)}`;
-	$('#copyLink')!.addEventListener('click', () =>
-		navigator.clipboard?.writeText(location.href).then(() => window.toast('記事のリンクをコピーしました'))
-	);
-
-	/* 目次リンク・先頭へ */
+	/* 目次：スムーズスクロール */
 	document.addEventListener('click', (e) => {
-		const t = e.target as Element;
-		const a = t.closest<HTMLAnchorElement>('.toc a, .toc-mobile a');
-		if (a) {
-			e.preventDefault();
-			const id = a.getAttribute('href')!.slice(1);
-			document.getElementById(id)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
-			history.replaceState(null, '', `#${id}`);
-			a.closest('details')?.removeAttribute('open');
-		}
-		if (t.closest('#toTop')) window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+		const a = (e.target as Element).closest<HTMLAnchorElement>('a[data-toc]');
+		if (!a) return;
+		e.preventDefault();
+		const id = a.dataset.toc!;
+		document.getElementById(id)?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+		history.replaceState(null, '', `#${id}`);
 	});
 
-	/* 読了率（本文の範囲で計算） */
-	const prose = $('#prose')!, bar = $('#progress')!, fill = $('#fill')!, pct = $('#pct')!;
-	function onScroll() {
-		const r = prose.getBoundingClientRect();
-		const total = Math.max(1, r.height - innerHeight * 0.4);
-		const p = Math.min(1, Math.max(0, (innerHeight * 0.6 - r.top) / total));
-		bar.style.transform = `scaleX(${p})`;
-		fill.style.width = `${p * 100}%`;
-		pct.textContent = `${Math.round(p * 100)}%`;
-	}
-	addEventListener('scroll', onScroll, { passive: true });
-	onScroll();
-
-	/* 目次のハイライト */
-	const links = document.querySelectorAll<HTMLElement>('[data-toc]');
+	/* 目次：読んでいる見出しをハイライト */
+	const links = [...document.querySelectorAll<HTMLElement>('[data-toc]')];
 	if (links.length) {
-		const obs = new IntersectionObserver(
-			(entries) => {
-				entries.forEach((en) => {
-					if (en.isIntersecting) links.forEach((l) => l.classList.toggle('active', l.dataset.toc === en.target.id));
-				});
-			},
-			{ rootMargin: '-90px 0px -65% 0px' }
+		const io = new IntersectionObserver(
+			(es) => es.forEach((en) => en.isIntersecting && links.forEach((l) => l.classList.toggle('on', l.dataset.toc === en.target.id))),
+			{ rootMargin: '-80px 0px -65% 0px' }
 		);
-		document.querySelectorAll('#prose h2').forEach((h) => obs.observe(h));
+		document.querySelectorAll('.prose h2').forEach((h) => io.observe(h));
 	}
 </script>
