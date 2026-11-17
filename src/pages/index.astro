@@ -1,199 +1,102 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import Cover from '../components/Cover.astro';
 import { getArticles } from '../lib/microcms';
-import { catOf, categoriesOf, coverSvg, excerptOf, fmtDate, isoDate, readMin } from '../lib/blog';
+import { catOf, categoriesOf, dotDate, excerptOf, readMin, two } from '../lib/blog';
 
-const articles = await getArticles();
+const articles = await getArticles(); // 新しい順
 const categories = categoriesOf(articles);
-const catNames = Object.fromEntries(categories.map((c) => [c.id, { name: c.name, color: c.color }]));
+const noOf = (i: number) => articles.length - i; // 古い記事から 01, 02, …
+const year = new Date().getFullYear();
 ---
 
-<Layout title="TECH BLOG">
-	<div class="view">
-		<section class="hero">
-			<div class="wrap">
-				<div class="hero-intro">
-					<div class="count"><b>{articles.length}</b>本の記事</div>
-				</div>
-				<ul class="fw-list" role="list">
-					{categories.map((c) => (
-						<li>
-							<button class="fw" type="button" style={`--c:var(${c.color})`} data-cat={c.id} aria-pressed="false">
-								<span class="fw-swatch"></span>
-								<span class="fw-name">{c.name}</span>
-								<span class="fw-meta"><span class="n">{c.count}</span>本</span>
-							</button>
-						</li>
-					))}
-				</ul>
-				<div class="fw-all"><span id="filterNote"></span><button type="button" id="clearFilter" hidden>すべての記事を表示</button></div>
-			</div>
-		</section>
+<Layout title="TECH BLOG — Front-end Field Notes">
+	<section class="hero pad">
+		<div class="meta tag"><span>Front-end field notes</span><span>Vol.01 / {year}</span><span>{articles.length} notes</span><span>Tokyo, JP</span></div>
+		<h1 aria-label="Front-end, field notes">
+			<span class="ln"><span>Front<span class="slash">/</span></span></span>
+			<span class="ln"><span><span class="ol">End</span> Field</span></span>
+			<span class="ln"><span>Notes.</span></span>
+		</h1>
+		<div class="sticker" aria-hidden="true"><div><b>{articles.length}</b>notes<br />shipped</div></div>
+		<div class="lede">
+			<p>{categories.length}つのフレームワークと microCMS。<em>作って、つまずいて、直した</em>記録を、そのまま置いています。</p>
+			<div class="stack">{categories.map((c) => <button type="button" data-filter={c.id}>{c.name}</button>)}</div>
+		</div>
+	</section>
 
-		<section class="list-section">
-			<div class="wrap">
-				<div class="list-head">
-					<h2 id="listTitle">すべての記事</h2>
-					<div class="sort" role="group" aria-label="並び順">
-						<button type="button" data-sort="new" aria-pressed="true">新しい順</button>
-						<button type="button" data-sort="old" aria-pressed="false">古い順</button>
-					</div>
+	<section class="pad" id="feature">
+		{articles.map((a, i) => (
+			<a class="feature" href={`/articles/${a.id}`} data-id={a.id} data-cat={a.category?.name} hidden={i !== 0}>
+				<Cover article={a} no={noOf(i)} eager={i === 0} />
+				<div class="txt">
+					<span class="tag"><span>Latest — No.{two(noOf(i))}</span><span>{dotDate(a.publishedAt)}</span></span>
+					<span class="chip tag">{catOf(a.category?.name).name}</span>
+					<h2>{a.title}</h2>
+					<p>{excerptOf(a)}</p>
+					<span class="go">Read the note <span aria-hidden="true">→</span></span>
 				</div>
-				<div class="grid" id="grid">
-					{articles.map((a, i) => {
-						const c = catOf(a.category?.name);
-						const cls = i === 0 ? 'lead' : i === 1 || i === 2 ? 'wide' : '';
-						const excerpt = excerptOf(a);
-						return (
-							<a
-								class={`post ${cls}`}
-								href={`/articles/${a.id}`}
-								style={`--c:var(${c.color})`}
-								data-cat={c.id}
-								data-date={isoDate(a.publishedAt)}
-								data-search={`${a.title} ${excerpt} ${c.name}`.toLowerCase()}
-							>
-								<div class="cover">
-									{a.eyecatch?.url
-										? <img src={a.eyecatch.url} alt="" loading={i < 3 ? 'eager' : 'lazy'} />
-										: <Fragment set:html={coverSvg(a)} />}
-									<span class="tag">{c.name}</span>
-								</div>
-								<div class="post-body">
-									<div class="post-date"><time datetime={isoDate(a.publishedAt)}>{fmtDate(a.publishedAt)}</time><span>{readMin(a.content)}分で読めます</span></div>
-									<h3 class="post-title"><span data-text={a.title}>{a.title}</span></h3>
-									<p class="post-excerpt" data-text={excerpt}>{excerpt}</p>
-									<span class="read-more" hidden={i !== 0}>記事を読む</span>
-								</div>
-							</a>
-						);
-					})}
-					<div class="empty" id="empty" hidden>
-						<h3 id="emptyTitle">一致する記事はありません</h3>
-						<p>別のキーワードで検索するか、絞り込みを解除してください。</p>
-						<button type="button" class="btn" id="resetAll">検索と絞り込みを解除</button>
-					</div>
-				</div>
-			</div>
-		</section>
-	</div>
+			</a>
+		))}
+	</section>
+
+	<section class="archive pad" aria-labelledby="archTitle">
+		<div class="archive-head"><h2 id="archTitle">Archive<sup id="count">{two(articles.length)}</sup></h2><span class="tag" id="scope">All frameworks</span></div>
+		<div class="cols tag" aria-hidden="true"><span>No.</span><span>Title</span><span>Framework</span><span>Read</span><span></span></div>
+		<ol id="list">
+			{articles.map((a, i) => (
+				<li class="entry" data-id={a.id} data-cat={a.category?.name} hidden={i === 0}>
+					<a href={`/articles/${a.id}`}>
+						<span class="no">{two(noOf(i))}</span>
+						<h3>{a.title}</h3>
+						<span class="fw tag">{catOf(a.category?.name).name}</span>
+						<span class="min tag">{readMin(a.content)} min</span>
+						<span class="arr" aria-hidden="true">→</span>
+						<span class="more"><Cover article={a} no={noOf(i)} named={false} /><p>{excerptOf(a)}</p></span>
+					</a>
+				</li>
+			))}
+		</ol>
+	</section>
 </Layout>
 
-<script define:vars={{ catNames }}>
-	window.__CATS__ = catNames;
-</script>
-
 <script>
-	type Cat = { name: string; color: string };
-	const CATS: Record<string, Cat> = (window as any).__CATS__;
-
 	const $ = <T extends Element = HTMLElement>(s: string) => document.querySelector<T>(s)!;
-	const grid = $('#grid');
-	const posts = [...grid.querySelectorAll<HTMLAnchorElement>('.post')];
-	const empty = $('#empty');
-	const q = $<HTMLInputElement>('#q');
+	const $$ = <T extends Element = HTMLElement>(s: string) => [...document.querySelectorAll<T>(s)];
 	const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+	const features = $$('.feature');
+	const entries = $$('.entry');
+	const names = Object.fromEntries($$('.filter[data-filter]').map((f) => [f.dataset.filter!, f.querySelector('b')!.textContent!]));
+	const two = (n: number) => String(n).padStart(2, '0');
 
-	const params = new URLSearchParams(location.search);
-	const state = {
-		cat: CATS[params.get('cat') ?? ''] ? params.get('cat')! : 'All',
-		q: params.get('q') ?? '',
-		sort: 'new' as 'new' | 'old',
+	const fromUrl = new URLSearchParams(location.search).get('cat') ?? '';
+	let cat = names[fromUrl] && fromUrl !== 'All' ? fromUrl : 'All';
+
+	function renderList() {
+		const match = (el: HTMLElement) => cat === 'All' || el.dataset.cat === cat;
+		const ids = entries.filter(match).map((el) => el.dataset.id); // 新しい順
+		features.forEach((f) => (f.hidden = f.dataset.id !== ids[0]));
+		entries.forEach((el) => (el.hidden = !match(el) || el.dataset.id === ids[0]));
+		$('#count').textContent = two(ids.length);
+		$('#scope').textContent = cat === 'All' ? 'All frameworks' : `Filtered: ${names[cat]}`;
+		$$('.filter').forEach((b) => (b.dataset.filter === cat ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current')));
+	}
+
+	const vt = (fn: () => void) => {
+		const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+		return !d.startViewTransition || reduced ? fn() : d.startViewTransition(fn);
 	};
-	q.value = state.q;
-
-	const esc = (s: string) =>
-		s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-	function mark(text: string) {
-		const safe = esc(text);
-		const term = state.q.trim();
-		if (!term) return safe;
-		const re = new RegExp(esc(term).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-		return safe.replace(re, (m) => `<mark>${m}</mark>`);
-	}
-
-	function syncUrl() {
-		const p = new URLSearchParams();
-		if (state.cat !== 'All') p.set('cat', state.cat);
-		if (state.q.trim()) p.set('q', state.q.trim());
-		const s = p.toString();
-		history.replaceState(null, '', s ? `/?${s}` : '/');
-	}
-
-	function render() {
-		const term = state.q.trim().toLowerCase();
-		const visible = posts
-			.filter((p) => (state.cat === 'All' || p.dataset.cat === state.cat) && (!term || p.dataset.search!.includes(term)))
-			.sort((a, b) =>
-				state.sort === 'new' ? b.dataset.date!.localeCompare(a.dataset.date!) : a.dataset.date!.localeCompare(b.dataset.date!)
-			);
-
-		posts.forEach((p) => (p.hidden = !visible.includes(p)));
-		visible.forEach((p, i) => {
-			p.classList.toggle('lead', i === 0);
-			p.classList.toggle('wide', i === 1 || i === 2);
-			p.querySelector<HTMLElement>('.read-more')!.hidden = i !== 0;
-			p.querySelectorAll<HTMLElement>('[data-text]').forEach((el) => (el.innerHTML = mark(el.dataset.text!)));
-			grid.insertBefore(p, empty);
-		});
-
-		empty.hidden = visible.length > 0;
-		$('#emptyTitle').textContent = state.q.trim() ? `「${state.q.trim()}」に一致する記事はありません` : '一致する記事はありません';
-
-		const cat = CATS[state.cat];
-		$('#listTitle').textContent = cat ? `${cat.name} の記事` : 'すべての記事';
-		$('#filterNote').textContent = cat ? `${cat.name} の記事を ${visible.length} 本表示しています` : '';
-		$('#clearFilter').hidden = !cat;
-		document.querySelectorAll<HTMLElement>('.fw').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.cat === state.cat)));
-		document.documentElement.style.setProperty('--accent', cat ? `var(${cat.color})` : 'var(--slate)');
-	}
-
-	function setCat(cat: string) {
-		state.cat = state.cat === cat ? 'All' : cat;
-		syncUrl();
-		render();
-	}
 
 	document.addEventListener('click', (e) => {
-		const t = e.target as Element;
-		const fw = t.closest<HTMLElement>('.fw');
-		if (fw) return setCat(fw.dataset.cat!);
-		if (t.closest('#clearFilter')) return setCat('All');
-		if (t.closest('#resetAll')) {
-			state.q = '';
-			q.value = '';
-			state.cat = 'All';
-			syncUrl();
-			return render();
-		}
-		const s = t.closest<HTMLElement>('[data-sort]');
-		if (s) {
-			state.sort = s.dataset.sort as 'new' | 'old';
-			document.querySelectorAll('[data-sort]').forEach((b) => b.setAttribute('aria-pressed', String(b === s)));
-			render();
-		}
-	});
-
-	// トップページでは検索をその場で反映（送信でページ遷移しない）
-	q.closest('form')!.addEventListener('submit', (e) => {
+		const f = (e.target as Element).closest<HTMLElement>('[data-filter]');
+		if (!f) return;
 		e.preventDefault();
-		grid.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
-	});
-	q.addEventListener('input', () => {
-		state.q = q.value;
-		syncUrl();
-		render();
-	});
-	q.addEventListener('keydown', (e) => {
-		if (e.key === 'Escape') {
-			q.value = '';
-			state.q = '';
-			syncUrl();
-			render();
-			q.blur();
-		}
+		cat = f.dataset.filter!;
+		history.replaceState(null, '', cat === 'All' ? '/' : `/?cat=${encodeURIComponent(cat)}`);
+		vt(renderList);
+		if (cat !== 'All') $('#feature').scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
 	});
 
-	render();
-	if (state.q) grid.scrollIntoView({ block: 'start' });
+	renderList();
+	if (cat !== 'All') scrollTo({ top: $('#feature').offsetTop - 24 });
 </script>
