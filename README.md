@@ -6,18 +6,18 @@ A static tech blog built with [Astro](https://astro.build/) and [microCMS](https
 
 ![Home page](./docs/screenshots/home.png)
 
-| Article page | Dark mode / category filter | Mobile |
+| Article page | Category filter | Mobile |
 | :---: | :---: | :---: |
-| ![Article page](./docs/screenshots/article.png) | ![Dark mode with the Svelte filter active](./docs/screenshots/home-dark.png) | ![Mobile layout](./docs/screenshots/mobile.png) |
+| ![Article page](./docs/screenshots/article.png) | ![List filtered by Svelte](./docs/screenshots/home-filter.png) | ![Mobile layout](./docs/screenshots/mobile.png) |
 
 ## Features
 
-- **Category filter**: one tile per framework that has articles, showing its article count. Click a tile to filter the list and click it again to clear the filter. The state is kept in the URL (`/?cat=Astro`).
-- **Search**: filters by title, summary, and category as you type, and highlights matches. Press `/` to focus the search box. The search state is also kept in the URL (`/?q=...`).
-- **Sort**: newest first or oldest first.
-- **Article page**: table of contents that tracks the current heading, reading progress bar, code blocks with a copy button and syntax colors, previous/next links, related articles, "copy link" and "post to X" buttons.
-- **Light and dark themes**: follows the OS setting by default. A manual choice is saved in the browser.
-- **Generated cover images**: articles without an eyecatch image get a geometric cover drawn in the category's color.
+- **Sidebar index**: one entry per framework that has articles, with its article count. Click one to filter the list. The state is kept in the URL (`/?cat=Astro`).
+- **Archive list**: the latest article is shown large and the rest are listed with numbers. Hovering a row opens its summary and cover.
+- **⌘K search**: press `⌘K` (`Ctrl K` on Windows) or `/` to open the search dialog. It searches titles, body text, and categories. Use the arrow keys to pick a result and Enter to open it.
+- **Article page**: a summary of date, reading time, section count, and code block count; a table of contents that tracks the current heading; a reading progress bar; code blocks with a copy button and syntax colors; previous/next links; and a "copy link" button.
+- **Page transitions**: in supporting browsers, View Transitions carry the cover from the list into the article page. Motion is turned off when the reduced-motion setting is on.
+- **Generated covers**: articles without an eyecatch image get a cover with the article number and a dot pattern.
 - **Sample data fallback**: if the microCMS environment variables are not set, the site uses built-in sample articles, so you can run it without an account.
 
 ## Tech stack
@@ -32,13 +32,15 @@ A static tech blog built with [Astro](https://astro.build/) and [microCMS](https
 /
 ├── docs/screenshots/          # Images used in this README
 ├── src/
-│   ├── layouts/Layout.astro   # Header, search, theme toggle, footer
+│   ├── components/Cover.astro # Article cover
+│   ├── layouts/Layout.astro   # Sidebar, ⌘K search, footer
 │   ├── lib/
 │   │   ├── microcms.ts        # microCMS client and getArticles()
-│   │   ├── blog.ts            # Categories, dates, cover images, body processing
+│   │   ├── blog.ts            # Categories, dates, covers, body processing
 │   │   └── sample-articles.ts # Fallback data used when env vars are missing
 │   ├── pages/
 │   │   ├── index.astro        # Article list
+│   │   ├── 404.astro
 │   │   └── articles/[slug].astro
 │   ├── styles/global.css
 │   └── types/article.ts       # Article type
@@ -59,7 +61,7 @@ Create a **list-type API** with the endpoint `blogs` and these fields:
 
 Article URLs are `/articles/{content ID}`.
 
-Use one of these category names to get the matching color: `Next`, `Nuxt`, `Astro`, `Gatsby`, `Svelte`. Other names still work and get a neutral color. Only categories with at least one article are shown. You can add or change categories in `CATEGORIES` in `src/lib/blog.ts`.
+If a category `name` is `Next.js`, `Nuxt`, `Astro`, `Gatsby`, or `Svelte`, it is listed in that order with a tidied display name. Other names are shown as they are. Only categories with at least one article are shown. You can add or change categories in `CATEGORIES` in `src/lib/blog.ts`.
 
 In the article body, `<h2>` headings are added to the table of contents automatically, and `<pre><code>` blocks get the copy button.
 
