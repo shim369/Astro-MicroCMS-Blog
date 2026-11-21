@@ -57,7 +57,7 @@
   .page{margin-left:var(--side);min-width:0;min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;overflow-x:clip} /* 見出し・ステッカーのはみ出しで横スクロールが出ないように */
   .page main{flex:1}
   .pad{padding-inline:clamp(20px,4vw,64px)}
-  .progress{position:fixed;top:0;left:var(--side);right:0;height:6px;background:var(--accent);transform-origin:left;transform:scaleX(0);z-index:31;opacity:0}
+  .progress{position:fixed;top:0;left:var(--side);right:0;height:6px;background:var(--accent);transform-origin:left;transform:scaleX(0);z-index:31;opacity:0;will-change:transform;pointer-events:none}
   .is-article .progress{opacity:1}
 
   .closer{background:var(--ink);color:var(--paper);margin-top:120px;overflow:hidden}
@@ -75,7 +75,7 @@
     .side .brand .vol,.side nav,.side .clock{display:none}
     .side .foot{border:0;padding:0 16px}
     .find{height:38px}
-    .progress{left:0}
+    .progress{position:absolute;top:auto;bottom:0;left:0;right:0;height:4px} /* sticky ヘッダーの下端に置き、ヘッダーと一緒に動かす */
   }
 }
 

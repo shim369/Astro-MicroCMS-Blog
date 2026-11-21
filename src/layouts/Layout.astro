@@ -48,7 +48,6 @@ const findJson = JSON.stringify(findIndex).replace(/</g, '\\u003c');
 	</head>
 	<body id="top">
 		<a href="#main" class="sr-only">本文へ移動</a>
-		<div class="progress" id="progress" aria-hidden="true"></div>
 
 		<aside class="side">
 			<div class="brand"><a href="/" aria-label="TECH BLOG トップへ">Tech<br />Blog</a><span class="vol">VOL.01 — {year} — FIELD NOTES</span></div>
@@ -65,6 +64,8 @@ const findJson = JSON.stringify(findIndex).replace(/</g, '\\u003c');
 				<button class="find" id="openFind" type="button" aria-haspopup="dialog"><span>Find a note</span><span id="kbd">⌘K</span></button>
 				<div class="clock tag"><span>Tokyo</span><time id="clock">--:--</time></div>
 			</div>
+			<!-- 読了バー：スマホではヘッダーと同じ層で描画してちらつきを防ぐ -->
+			<div class="progress" id="progress" aria-hidden="true"></div>
 		</aside>
 
 		<div class="page">
